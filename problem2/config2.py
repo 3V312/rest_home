@@ -2,14 +2,22 @@
 # 问题2：服务站选址与规模化优化 - 原始配置
 
 import os
+import sys
 import numpy as np
 from datetime import datetime
 
-# ================== 基础目录 ==================
-BASE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "results")
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from shared_config import (
+    COMMUNITIES, DIST_MATRIX, SERVICES, BASE_PRICE, REVENUE_PER_SERVICE, COST_PER_SERVICE,
+    ELDERLY_BY_TYPE_Y5, TOTAL_ELDERLY_Y5, DEMAND_MONTHLY, DAILY_DEMAND, DAILY_DEMAND_BY_SERVICE,
+    INCOME_PER_MONTH, CONSUMPTION_CAP_RATIO, SERVICE_RADIUS,
+    CONSTRUCTION_COST, DAILY_MANAGEMENT_COST, MAX_CAPACITY,
+    W1, W2, W3,
+    satisfaction_S1, satisfaction_S2, satisfaction_S3, total_satisfaction,
+    get_distance, get_service_index, get_base_price_by_service
+)
 
-# ================== 小区基础数据（第5年末，原始预测） ==================
-COMMUNITIES = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J']
+BASE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "results")
 
 # 第5年末各类老年人口 [自理, 半失能, 失能, 总]（原始参数：增长率7%，P_12=0.045, P_23=0.1）
 ELDERLY_POP_YEAR5 = {
@@ -56,92 +64,27 @@ DAILY_DEMAND_BY_SERVICE = {
     comm: [d / 30 for d in DEMAND_MONTHLY_TOTAL[comm]] for comm in COMMUNITIES
 }
 
-# ================== 距离矩阵（附件4，单位：米） ==================
-DIST_MATRIX = [
-    [0,   600, 1200, 900, 1500, 1800, 1300, 700, 1100, 500],
-    [600, 0,   800, 500, 1100, 1400, 900, 400, 700,  300],
-    [1200,800, 0,   700, 600,  900,  500, 900, 600,  700],
-    [900, 500, 700, 0,   800,  1100, 600, 300, 500,  400],
-    [1500,1100,600, 800, 0,    500,  400, 1000,500,  800],
-    [1800,1400,900, 1100,500, 0,    500, 1200,700,  1100],
-    [1300,900, 500, 600, 400,  500,  0,   800, 400,  600],
-    [700, 400, 900, 300, 1000, 1200, 800, 0,   600,  300],
-    [1100,700, 600, 500, 500,  700,  400, 600, 0,    400],
-    [500, 300, 700, 400, 800,  1100, 600, 300, 400,  0]
-]
 
-# ================== 服务站参数（附件3，原始配置） ==================
-# 类型编码：0-不建, 1-小型, 2-中型, 3-大型
-CONSTRUCTION_COST = {0: 0, 1: 18, 2: 32, 3: 45}      # 万元
 
-# 日固定管理成本（元/日）- 原始值
-DAILY_MANAGEMENT_COST = {0: 0, 1: 2000, 2: 3200, 3: 4400}
-
-# 日服务能力（人次/日）
-MAX_CAPACITY = {0: 0, 1: 1000, 2: 2000, 3: 3000}
-
-SERVICE_RADIUS = 1000   # 米
+BUDGET_MAX = 120
 
 # 总建设预算（万元，原始值）
 BUDGET_MAX = 120
 
-# ================== 服务项目配置（附件2） ==================
-SERVICES = ['助餐', '日间照料', '上门护理', '康复理疗', '助浴', '紧急救助']
-REVENUE_PER_SERVICE = [10, 20, 30, 28, 25, 0]   # 元/次（服务收入）
-COST_PER_SERVICE = [8, 16, 24, 23, 20, 8]       # 元/次（直接支出成本）
 
-# ================== 满意度函数（附件5） ==================
-W1, W2, W3 = 0.2, 0.3, 0.5   # 距离、响应、价格满意度权重
 
-# 服务基准价格（用于价格满意度计算）
-BASE_PRICES = [10, 20, 30, 28, 25, 0]   # 与REVENUE_PER_SERVICE一致
+BASE_PRICES = REVENUE_PER_SERVICE
 
 def calc_s1(d):
-    """距离满意度 S1（分段线性）"""
-    if d <= 300:
-        return 1.00
-    elif d <= 500:
-        return 1.0 - (d - 300) / 200 * 0.1
-    elif d <= 650:
-        return 0.9 - (d - 500) / 150 * 0.15
-    elif d <= 1000:
-        return 0.75 - (d - 650) / 350 * 0.15
-    else:
-        return 0.0
+    return satisfaction_S1(d)
 
 def calc_s2(utilization):
-    """服务响应满意度 S2（平滑版本）"""
-    if utilization <= 0.60:
-        return 1.00
-    elif utilization <= 0.75:
-        return 1.0 - (utilization - 0.60) / 0.15 * 0.07
-    elif utilization <= 0.85:
-        return 0.93 - (utilization - 0.75) / 0.10 * 0.08
-    elif utilization <= 0.95:
-        return 0.85 - (utilization - 0.85) / 0.10 * 0.13
-    elif utilization <= 1.00:
-        return 0.72 - (utilization - 0.95) / 0.05 * 0.12
-    else:
-        return max(0.4, 0.6 - (utilization - 1.0) * 0.4)
+    return satisfaction_S2(utilization)
 
 def calc_s3(price, base_price):
-    """价格满意度 S3（基于价格与基准价的比值）"""
-    if base_price == 0:
-        return 1.0
-    ratio = price / base_price
-    if ratio <= 0.8:
-        return 1.00
-    elif ratio <= 1.0:
-        return 1.0 - (ratio - 0.8) / 0.2 * 0.1
-    elif ratio <= 1.2:
-        return 0.9 - (ratio - 1.0) / 0.2 * 0.15
-    elif ratio <= 1.5:
-        return 0.75 - (ratio - 1.2) / 0.3 * 0.15
-    else:
-        return 0.6
+    return satisfaction_S3(price, base_price)
 
 def calc_community_s3(comm_idx):
-    """计算小区 i 的价格满意度 S3i（按服务使用量加权平均）"""
     comm_name = COMMUNITIES[comm_idx]
     daily_demands = DAILY_DEMAND_BY_SERVICE[comm_name]
     total_demand = sum(daily_demands)
@@ -153,18 +96,16 @@ def calc_community_s3(comm_idx):
             weight = demand / total_demand
             price = REVENUE_PER_SERVICE[svc_idx]
             base_price = BASE_PRICES[svc_idx]
-            weighted_s3 += weight * calc_s3(price, base_price)
+            weighted_s3 += weight * satisfaction_S3(price, base_price)
     return weighted_s3
 
 def calc_satisfaction(distance):
-    """简化满意度（默认S2=1.0, S3=1.0），用于静态计算"""
-    s1 = calc_s1(distance)
+    s1 = satisfaction_S1(distance)
     return W1 * s1 + W2 * 1.0 + W3 * 1.0
 
 def calc_satisfaction_dynamic(d, utilization, s3=1.0):
-    """动态综合满意度（考虑拥挤度和价格满意度）"""
-    s1 = calc_s1(d)
-    s2 = calc_s2(utilization)
+    s1 = satisfaction_S1(d)
+    s2 = satisfaction_S2(utilization)
     return W1 * s1 + W2 * s2 + W3 * s3
 
 # ================== 利润计算辅助函数 ==================

@@ -13,7 +13,12 @@ plt.rcParams['axes.unicode_minus'] = False
 
 
 def read_data():
-    path = r"D:\PyCharm 2025.2.3\PROJECTS\PythonProject\rest_home\problem1\results\1_0522_1617.xlsx"
+    results_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "results")
+    xlsx_files = [f for f in os.listdir(results_dir) if f.endswith('.xlsx') and f.startswith('1_')]
+    if not xlsx_files:
+        raise FileNotFoundError(f"未找到结果文件，请先运行 main.py 生成结果")
+    xlsx_files.sort(reverse=True)
+    path = os.path.join(results_dir, xlsx_files[0])
     df11 = pd.read_excel(path, sheet_name='1.1人口预测')
     df12 = pd.read_excel(path, sheet_name='1.2理论需求')
     df13 = pd.read_excel(path, sheet_name='1.3实际需求')

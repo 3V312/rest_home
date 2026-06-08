@@ -63,7 +63,7 @@ def calc_p1():
     df13 = pd.DataFrame(res13,
                         columns=['小区', '服务项目', '自理实际需求', '半失能实际需求', '失能实际需求', '总量实际需求'])
 
-    path = r"D:\PyCharm 2025.2.3\PROJECTS\PythonProject\rest_home\problem1\results"
+    path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "results")
     os.makedirs(path, exist_ok=True)
 
     ts = datetime.now().strftime("%m%d_%H%M%S")

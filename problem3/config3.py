@@ -1,12 +1,18 @@
 import os
+import sys
 import numpy as np
 from datetime import datetime
 
-SERVICES = ['助餐', '日间照料', '上门护理', '康复理疗', '助浴', '紧急救助']
-SERVICE_INDEX = {name: idx for idx, name in enumerate(SERVICES)}
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from shared_config import (
+    COMMUNITIES, DIST_MATRIX, SERVICES, SERVICE_INDEX, BASE_PRICE, REVENUE_PER_SERVICE,
+    ELDERLY_BY_TYPE_Y5, TOTAL_ELDERLY_Y5, DEMAND_MONTHLY, DEMAND_YEARLY,
+    INCOME_PER_MONTH, CONSUMPTION_CAP_RATIO,
+    satisfaction_S1, satisfaction_S2, satisfaction_S3, total_satisfaction,
+    get_distance, get_service_index, get_base_price_by_service
+)
 
-BASE_PRICE = [8, 16, 24, 23, 20, 8]
-REVENUE = [10, 20, 30, 28, 25, 0]
+REVENUE = REVENUE_PER_SERVICE
 
 CONSUMPTION_CAP_RATIO = {'自理': 0.20, '半失能': 0.25, '失能': 0.30}
 
@@ -138,25 +144,7 @@ DEMAND_BY_TYPE_MONTHLY = {
     }
 }
 
-COMMUNITIES = ['A','B','C','D','E','F','G','H','I','J']
 
-DIST_MATRIX = [
-    [0,   600, 1200, 900, 1500, 1800, 1300, 700, 1100, 500],
-    [600, 0,   800, 500, 1100, 1400, 900, 400, 700,  300],
-    [1200,800, 0,   700, 600,  900,  500, 900, 600,  700],
-    [900, 500, 700, 0,   800,  1100, 600, 300, 500,  400],
-    [1500,1100,600, 800, 0,    500,  400, 1000,500,  800],
-    [1800,1400,900, 1100,500, 0,    500, 1200,700,  1100],
-    [1300,900, 500, 600, 400,  500,  0,   800, 400,  600],
-    [700, 400, 900, 300, 1000, 1200, 800, 0,   600,  300],
-    [1100,700, 600, 500, 500,  700,  400, 600, 0,    400],
-    [500, 300, 700, 400, 800,  1100, 600, 300, 400,  0]
-]
-
-def get_distance(comm1, comm2):
-    i = COMMUNITIES.index(comm1)
-    j = COMMUNITIES.index(comm2)
-    return DIST_MATRIX[i][j]
 
 STATIONS = [
     {
@@ -207,52 +195,4 @@ STATIONS = [
     }
 ]
 
-def satisfaction_S1(distance_m):
-    if distance_m <= 300:
-        return 1.00
-    elif distance_m <= 500:
-        return 0.90
-    elif distance_m <= 650:
-        return 0.75
-    elif distance_m <= 1000:
-        return 0.60
-    else:
-        return 0.0
 
-def satisfaction_S2(utilization):
-    if utilization <= 0.60:
-        return 1.00
-    elif utilization <= 0.75:
-        return 0.93
-    elif utilization <= 0.85:
-        return 0.85
-    elif utilization <= 0.95:
-        return 0.72
-    else:
-        return 0.60
-
-def satisfaction_S3(price, base_price):
-    if base_price == 0:
-        return 1.0
-    
-    ratio = price / base_price
-    if ratio <= 0.8:
-        return 1.00
-    elif ratio <= 1.0:
-        return 1.0 - (ratio - 0.8) / 0.2 * 0.1
-    elif ratio <= 1.2:
-        return 0.9 - (ratio - 1.0) / 0.2 * 0.15
-    else:
-        return 0.60
-
-def total_satisfaction(distance, price, base_price, utilization=0.5):
-    s1 = satisfaction_S1(distance)
-    s2 = satisfaction_S2(utilization)
-    s3 = satisfaction_S3(price, base_price)
-    return 0.2 * s1 + 0.3 * s2 + 0.5 * s3
-
-def get_service_index(service_name):
-    return SERVICE_INDEX[service_name]
-
-def get_base_price_by_service(service_name):
-    return BASE_PRICE[get_service_index(service_name)]

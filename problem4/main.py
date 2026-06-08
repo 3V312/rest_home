@@ -3,17 +3,19 @@ import os
 import json
 import pandas as pd
 
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
 OLD_RESULT_PATHS = {
-    'problem2': r'D:\PyCharm 2025.2.3\PROJECTS\PythonProject\rest_home\problem2\results\enum_20260523_152013',
-    'problem3': r'D:\PyCharm 2025.2.3\PROJECTS\PythonProject\rest_home\problem3\results\3_20260523_144823'
+    'problem2': os.path.join(PROJECT_ROOT, 'problem2', 'results', 'enum_20260523_152013'),
+    'problem3': os.path.join(PROJECT_ROOT, 'problem3', 'results', '3_20260523_144823')
 }
 
 NEW_RESULT_PATHS = {
-    'problem2': r'D:\PyCharm 2025.2.3\PROJECTS\PythonProject\rest_home\problem2\results',
-    'problem3': r'D:\PyCharm 2025.2.3\PROJECTS\PythonProject\rest_home\problem3\results'
+    'problem2': os.path.join(PROJECT_ROOT, 'problem2', 'results'),
+    'problem3': os.path.join(PROJECT_ROOT, 'problem3', 'results')
 }
 
-OUTPUT_DIR = r'D:\PyCharm 2025.2.3\PROJECTS\PythonProject\rest_home\problem4\results'
+OUTPUT_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'results')
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
 
