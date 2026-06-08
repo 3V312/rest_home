@@ -1,3 +1,4 @@
+[README.md](https://github.com/user-attachments/files/28695321/README.md)
 # rest_home
 
 嵌入式社区养老服务站规划、定价与补贴优化项目。代码按题目拆分为 `problem1` 至 `problem4` 四个模块，围绕社区老年人口预测、服务需求估计、服务站选址与规模优化、服务定价、政府补贴和参数灵敏度分析展开。
